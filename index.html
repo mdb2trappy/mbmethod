@@ -71,6 +71,7 @@ svg{width:30px;height:30px;display:block}.t svg{width:34px;height:34px}
 .av{width:40px;height:40px;border-radius:50%;background:var(--tile);border:1px solid var(--line);display:grid;place-items:center;font-weight:600;flex:none}
 .av.big{width:64px;height:64px;font-size:26px;margin:0 auto}
 .row.tx{gap:12px;cursor:pointer}.row.tx>span:nth-child(2){flex:1;min-width:0}
+.hold{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 </style>
 </head>
 <body>
@@ -138,15 +139,14 @@ svg{width:30px;height:30px;display:block}.t svg{width:34px;height:34px}
 <main class="screen" id="acctS">
   <div class="head"><button id="aback">‹ Back</button><b id="an"></b><span></span></div>
   <div class="c" style="margin-top:26px"><div id="ab" style="font-size:40px;font-weight:700"></div><p id="aa"></p><p id="ad" style="font-size:13px"></p></div>
-  <div style="display:flex;gap:10px;margin-top:18px"><button class="lnk" id="aadd" style="margin:0">Add transaction</button><button class="lnk" id="ahome" style="margin:0">Show on home</button></div>
+  
   <div class="search" style="margin:18px 0 0"><span>⌕</span><input id="tq" placeholder="Search transactions" aria-label="Search transactions" autocomplete="off" style="flex:1;background:none;border:0;color:var(--text);font-size:15px;font-family:inherit"></div>
   <div id="tl"></div>
 </main>
 
 <main class="screen" id="txS">
-  <div class="head"><button id="tback">‹ Back</button><b>Transaction</b><button class="r" id="tedit">Edit</button></div>
+  <div class="head"><button id="tback">‹ Back</button><b>Transaction</b><span></span></div>
   <div id="tdet"></div>
-  <button class="lnk" id="tdel">Delete transaction</button>
 </main>
 
 <main class="screen" id="txE">
@@ -159,10 +159,11 @@ svg{width:30px;height:30px;display:block}.t svg{width:34px;height:34px}
   <label class="row"><span>Pending</span><input class="chk" type="checkbox" id="tp"></label>
   <label class="row"><span>Also adjust account balance</span><input class="chk" type="checkbox" id="tj"></label>
   <div class="err" id="terr"></div>
+  <button class="lnk" id="tdel">Delete transaction</button>
 </main>
 
 <main class="screen" id="contS">
-  <div class="head"><button id="cback">‹ Back</button><b>Contacts</b><button class="r" id="cadd">Add</button></div>
+  <div class="head"><button id="cback">‹ Back</button><b id="ctitle">Contacts</b><span></span></div>
   <div id="cl" style="margin-top:14px"></div>
 </main>
 
@@ -189,14 +190,14 @@ svg{width:30px;height:30px;display:block}.t svg{width:34px;height:34px}
 <main class="screen" id="cardS">
   <div class="head"><span></span><b>Cards</b><span></span></div>
   <div class="cardv" id="cardv"></div>
-  <div class="lbl">Last 4 digits</div><div class="field"><input id="c4" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Last 4 digits"></div>
+  <div id="c4box" style="display:none"><div class="lbl">Last 4 digits</div><div class="field"><input id="c4" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Last 4 digits"></div></div>
   <button class="lnk" id="lock">Lock card</button>
 </main>
 
 <main class="screen" id="rewS">
   <div class="head"><span></span><b>Rewards</b><span></span></div>
   <div class="c" style="margin-top:50px"><div id="pts" style="font-size:46px;font-weight:700"></div><p>points</p></div>
-  <div class="lbl">Points balance</div><div class="field"><input id="ipts" inputmode="numeric" autocomplete="off" aria-label="Points balance"></div>
+  <div id="pbox" style="display:none"><div class="lbl">Points balance</div><div class="field"><input id="ipts" inputmode="numeric" autocomplete="off" aria-label="Points balance"></div></div>
 </main>
 
 <main class="screen" id="outS">
@@ -265,9 +266,22 @@ function tick(){const p=st.phs.split(',').map(x=>x.trim()).filter(Boolean);$('ph
 
 $('card').onclick=e=>{if(e.target.closest('button'))return;if(st.accts.length>1){st.cur=(st.cur+1)%st.accts.length;persist();render()}};
 
+/* Hold-to-edit: every edit needs a 3 second press */
+function hold(el,fn,ms){ms=ms||3000;let t=null,x=0,y=0,fired=false;el.classList.add('hold');
+  const pt=e=>e.touches&&e.touches[0]?e.touches[0]:e;
+  const start=e=>{fired=false;const p=pt(e);x=p.clientX;y=p.clientY;clearTimeout(t);t=setTimeout(()=>{fired=true;try{navigator.vibrate&&navigator.vibrate(30)}catch(_){}fn()},ms)};
+  const stop=()=>{clearTimeout(t);if(fired){hold.until=Date.now()+600;fired=false}};
+  const move=e=>{const p=pt(e);if(Math.abs(p.clientX-x)>12||Math.abs(p.clientY-y)>12)clearTimeout(t)};
+  el.addEventListener('touchstart',start,{passive:true});el.addEventListener('touchmove',move,{passive:true});
+  el.addEventListener('touchend',stop);el.addEventListener('touchcancel',stop);
+  el.addEventListener('mousedown',start);el.addEventListener('mousemove',e=>{if(e.buttons)move(e)});
+  el.addEventListener('mouseup',stop);el.addEventListener('mouseleave',()=>clearTimeout(t));
+  el.addEventListener('contextmenu',e=>e.preventDefault())}
+document.addEventListener('click',e=>{if(Date.now()<(hold.until||0)){e.stopPropagation();e.preventDefault()}},true);
+
 /* Edit account */
 function openEdit(){$('lbl').textContent='Mock balance — '+A().n;$('ibal').value=A().b;$('iacct').value=A().n;$('ibsb').value=A().bsb;$('inum').value=A().num;$('iname').value=st.name;$('ifoot').value=st.foot;show('editS');$('ibal').focus()}
-$('edit').onclick=openEdit;$('cancel').onclick=()=>show('home');
+$('edit').onclick=null;hold($('card'),openEdit);$('cancel').onclick=()=>show('home');
 $('save').onclick=()=>{const v=num($('ibal').value);if(!isNaN(v))A().b=Math.round(v*100)/100;A().n=$('iacct').value.trim()||A().n;A().bsb=$('ibsb').value.trim()||A().bsb;A().num=$('inum').value.trim()||A().num;st.name=$('iname').value.trim()||st.name;st.foot=$('ifoot').value.trim();persist();render();show('home')};
 function arm(id,txt,fn){const b=$(id);let on=false;b.onclick=()=>{if(!on){on=true;b.textContent='Tap again to confirm';setTimeout(()=>{on=false;b.textContent=txt},3000)}else{on=false;b.textContent=txt;fn()}}}
 $('addA').onclick=()=>{st.accts.push({id:uid(),n:'New Account',b:0,bsb:'123-456',num:'0000 0000'});st.cur=st.accts.length-1;persist();render();openEdit()};
@@ -275,7 +289,7 @@ arm('delA','Delete this account',()=>{if(st.accts.length<2){toast('Keep at least
 arm('rst','Reset everything',()=>{st=DEF();persist();render();show('home')});
 
 /* Widgets */
-$('edit2').onclick=()=>{$('wlist').innerHTML=TILES.map(t=>'<label class="row"><span>'+L(t)+'</span><input class="chk" type="checkbox" data-k="'+t.k+'" '+(st.hide.includes(t.k)?'':'checked')+'></label>').join('');show('widS')};
+const openWid=()=>{$('wlist').innerHTML=TILES.map(t=>'<label class="row"><span>'+L(t)+'</span><input class="chk" type="checkbox" data-k="'+t.k+'" '+(st.hide.includes(t.k)?'':'checked')+'></label>').join('');show('widS')};hold($('edit2'),openWid);
 $('wcancel').onclick=()=>show('home');
 $('wsave').onclick=()=>{st.hide=[...$('wlist').querySelectorAll('input')].filter(i=>!i.checked).map(i=>i.dataset.k);persist();render();show('home')};
 
@@ -287,7 +301,7 @@ let ai=0,q='',ti='',te=null;
 function openProd(){
   $('ptot').textContent=money(st.accts.reduce((s,a)=>s+a.b,0));
   $('plist').innerHTML=st.accts.map((a,i)=>'<div class="row" data-i="'+i+'" style="cursor:pointer"><span>'+esc(a.n)+'<small>BSB '+esc(a.bsb)+' · '+esc(a.num)+'</small></span><b>'+money(a.b)+'</b></div>').join('');
-  $('plist').querySelectorAll('.row').forEach(r=>r.onclick=()=>openAcct(+r.dataset.i));
+  $('plist').querySelectorAll('.row').forEach(r=>{r.onclick=()=>openAcct(+r.dataset.i);hold(r,()=>{st.cur=+r.dataset.i;persist();render();openEdit()})});
   show('prodS');
 }
 function openAcct(i){ai=i;q='';$('tq').value='';renderAcct();show('acctS')}
@@ -298,7 +312,7 @@ function renderAcct(){const a=st.accts[ai];
   rows.forEach(t=>{const g=dayLbl(t.t);if(g!==last){h+='<div class="sec">'+g+'</div>';last=g}
     h+='<div class="row tx" data-id="'+t.id+'">'+av(t.d)+'<span>'+esc(t.d)+'<small>'+esc(t.c)+(t.p?' · Pending':'')+'</small></span><span class="'+(t.m>0?'pos':'')+'">'+amt(t.m)+'</span></div>'});
   $('tl').innerHTML=h||'<p class="note" style="margin:24px 0">No transactions found.</p>';
-  $('tl').querySelectorAll('.tx').forEach(r=>r.onclick=()=>openTx(r.dataset.id));
+  $('tl').querySelectorAll('.tx').forEach(r=>{r.onclick=()=>openTx(r.dataset.id);hold(r,()=>openTxE(r.dataset.id))});
 }
 function openTx(id){const t=st.tx.find(x=>x.id===id);if(!t)return;ti=id;const a=st.accts.find(x=>x.id===t.i)||{n:''};
   $('tdet').innerHTML='<div class="c" style="margin-top:28px">'+av(t.d,1)+'<h2 style="margin:14px 0 4px">'+esc(t.d)+'</h2><div class="'+(t.m>0?'pos':'')+'" style="font-size:34px;font-weight:700">'+amt(t.m)+'</div></div><div style="margin-top:22px"></div>'+
@@ -309,7 +323,7 @@ function openTxE(id){te=id?st.tx.find(x=>x.id===id):null;const t=te||{d:'',m:-1,
   $('tm').value=t.d;$('ta').value=te?Math.abs(t.m):'';$('tt').value=t.m>0?'in':'out';
   $('tc').innerHTML=CATS.map(c=>'<option'+(c===t.c?' selected':'')+'>'+c+'</option>').join('');
   $('td').value=new Date(t.t-new Date(t.t).getTimezoneOffset()*60000).toISOString().slice(0,10);
-  $('tp').checked=!!t.p;$('tj').checked=false;$('terr').textContent='';show('txE')}
+  $('tp').checked=!!t.p;$('tj').checked=false;$('terr').textContent='';$('tdel').style.display=te?'block':'none';show('txE')}
 $('tsave').onclick=()=>{const d=$('tm').value.trim(),v=Math.abs(num($('ta').value)),err=m=>{$('terr').textContent=m};
   if(!d)return err('Enter a description.');if(!(v>0))return err('Enter an amount greater than $0.');
   const m=Math.round(($('tt').value==='in'?v:-v)*100)/100,dt=new Date($('td').value+'T12:00:00').getTime()||Date.now(),acc=st.accts[ai],c=$('tc').value,p=$('tp').checked?1:0;
@@ -317,21 +331,21 @@ $('tsave').onclick=()=>{const d=$('tm').value.trim(),v=Math.abs(num($('ta').valu
   else{st.tx.unshift({id:uid(),i:acc.id,d,m,c,t:dt,p});if($('tj').checked)acc.b=Math.round((acc.b+m)*100)/100}
   persist();render();renderAcct();show('acctS')};
 $('pback').onclick=()=>show('home');$('aback').onclick=()=>openProd();
-$('aadd').onclick=()=>openTxE(null);$('tcancel').onclick=()=>show('acctS');
-$('ahome').onclick=()=>{st.cur=ai;persist();render();toast('Showing on your home screen')};
+hold($('ab').parentElement,()=>openTxE(null));$('tcancel').onclick=()=>show('acctS');
+
 $('tq').oninput=()=>{q=$('tq').value.trim().toLowerCase();renderAcct()};
-$('tback').onclick=()=>show('acctS');$('tedit').onclick=()=>openTxE(ti);
-arm('tdel','Delete transaction',()=>{st.tx=st.tx.filter(x=>x.id!==ti);persist();renderAcct();show('acctS')});
+$('tback').onclick=()=>show('acctS');
+arm('tdel','Delete transaction',()=>{st.tx=st.tx.filter(x=>x!==te);persist();renderAcct();show('acctS')});
 
 /* Contacts */
 let ci='';
 function openCont(){
-  $('cl').innerHTML=st.contacts.map(c=>'<div class="row tx" data-id="'+c.id+'">'+av(c.name)+'<span>'+esc(c.name)+'<small>BSB '+esc(c.bsb)+' · '+esc(c.num)+'</small></span><span style="color:var(--mute)">›</span></div>').join('')||'<p class="note" style="margin:24px 0">No contacts yet. Tap Add to create one.</p>';
-  $('cl').querySelectorAll('.tx').forEach(r=>r.onclick=()=>openContE(r.dataset.id));show('contS')}
+  $('cl').innerHTML=st.contacts.map(c=>'<div class="row tx" data-id="'+c.id+'">'+av(c.name)+'<span>'+esc(c.name)+'<small>BSB '+esc(c.bsb)+' · '+esc(c.num)+'</small></span><span style="color:var(--mute)">›</span></div>').join('')||'<p class="note" style="margin:24px 0">No contacts yet. Hold the Contacts title for 3 seconds to add one.</p>';
+  $('cl').querySelectorAll('.tx').forEach(r=>{r.onclick=()=>{openForm('pay');$('f_c').value=r.dataset.id};hold(r,()=>openContE(r.dataset.id))});show('contS')}
 function openContE(id){ci=id||'';const c=st.contacts.find(x=>x.id===id)||{name:'',bsb:'',num:''};
   $('ce_t').textContent=id?'Edit contact':'New contact';$('cn').value=c.name;$('cb').value=c.bsb;$('cu').value=c.num;$('cerr').textContent='';
   $('cpay').style.display=id?'block':'none';$('cdel').style.display=id?'block':'none';show('contE')}
-$('cadd').onclick=()=>openContE('');$('cback').onclick=()=>show('payS');$('ccancel2').onclick=()=>openCont();
+hold($('ctitle'),()=>openContE(''));$('cback').onclick=()=>show('payS');$('ccancel2').onclick=()=>openCont();
 $('csave2').onclick=()=>{const n=$('cn').value.trim();if(!n){$('cerr').textContent='Enter a name.';return}
   const o={name:n,bsb:$('cb').value.trim()||'000-000',num:$('cu').value.trim()||'0000 0000'};
   if(ci)Object.assign(st.contacts.find(x=>x.id===ci),o);else st.contacts.push(Object.assign({id:uid()},o));
@@ -393,11 +407,13 @@ function renderCard(){const l=st.locked,c=$('cardv');c.style.opacity=l?.55:1;
   c.innerHTML='<div style="display:flex;justify-content:space-between"><span>'+esc(A().n)+'</span><span>'+(l?'Locked':'Active')+'</span></div><div style="font-size:22px;letter-spacing:2px">•••• •••• •••• '+esc(st.card4)+'</div><div>'+esc(st.name.toUpperCase())+'</div>';
   $('lock').textContent=l?'Unlock card':'Lock card'}
 $('c4').oninput=()=>{st.card4=$('c4').value.replace(/\D/g,'').slice(0,4)||'0000';persist();renderCard()};
+hold($('cardv'),()=>{$('c4box').style.display='block';$('c4').focus()});
 $('lock').onclick=()=>{st.locked=!st.locked;persist();renderCard();toast(st.locked?'Card locked':'Card unlocked')};
+hold($('pts'),()=>{$('pbox').style.display='block';$('ipts').focus()});
 $('ipts').oninput=()=>{const v=parseInt($('ipts').value.replace(/\D/g,''),10);st.pts=isNaN(v)?0:v;persist();$('pts').textContent=st.pts.toLocaleString()};
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{const s=b.dataset.s;
-  if(s==='cardS'){$('c4').value=st.card4;renderCard()}
-  if(s==='rewS'){$('ipts').value=st.pts;$('pts').textContent=st.pts.toLocaleString()}
+  if(s==='cardS'){$('c4').value=st.card4;$('c4box').style.display='none';renderCard()}
+  if(s==='rewS'){$('pbox').style.display='none';$('ipts').value=st.pts;$('pts').textContent=st.pts.toLocaleString()}
   if(s==='prodS')openProd();else show(s)});
 
 /* Customise */
