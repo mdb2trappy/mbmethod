@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Larp Wallet">
+<meta name="theme-color" content="#1b181b">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<title>Larp Wallet</title>
+<style>
+:root{--bg:#1b181b;--tile:#252122;--line:#3a3536;--text:#f4f2f2;--mute:#9a9496;--gold:#e7d21b;--ink:#110d06;--red:#ff7a70;--grn:#6fd98a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;display:flex;justify-content:center}
+.screen{width:100%;max-width:440px;min-height:100vh;padding:14px 16px 40px;display:none}.screen.on{display:block}
+.bar{display:flex;justify-content:flex-end;gap:14px;height:34px;align-items:center}
+.ic{width:24px;height:24px;border:1.5px solid var(--text);border-radius:50%;font-size:13px;display:grid;place-items:center}
+h1{font-size:34px;font-weight:600;margin:14px 0 18px;letter-spacing:-.7px}
+.search{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--mute);font-size:15px;margin-bottom:20px}
+.search span:nth-child(2){flex:1}
+.card{background:var(--gold);color:var(--ink);border-radius:8px;padding:16px;height:168px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer}
+.top{display:flex;justify-content:space-between;font-size:15px}
+.dots{background:none;border:0;font-size:22px;line-height:.6;color:var(--ink);cursor:pointer;padding:6px}
+.bot{display:flex;justify-content:space-between;align-items:flex-end}
+.xfer{background:var(--ink);color:var(--onink,#fff);border:0;border-radius:999px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
+.bal{text-align:right}.bal b{display:block;font-size:20px;font-weight:700}.bal small{font-size:13px;opacity:.8}
+#pg{display:flex;justify-content:center;gap:6px;margin-top:10px;min-height:6px}#pg i{width:6px;height:6px;border-radius:50%;background:var(--line)}#pg i.on{background:var(--gold)}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0 0}
+.t{text-align:center;font-size:12px;cursor:pointer}
+.t div{height:84px;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;margin-bottom:8px}
+.t.last div{background:var(--tile)}
+.pill{display:block;margin:0 auto;border-radius:999px;padding:12px 26px;font-size:15px;cursor:pointer;font-family:inherit}
+.ghost{background:none;border:1px solid var(--line);color:var(--text);margin-top:34px!important}
+.solid{background:#ece9e9;border:0;color:#1b181b;margin-top:26px!important;position:relative}
+.note{text-align:center;color:var(--mute);font-size:12px;margin-top:28px}
+.head{display:grid;grid-template-columns:80px 1fr 80px;align-items:center;height:44px;font-size:16px}
+.head b{font-weight:500;text-align:center}.head button{background:none;border:0;color:var(--mute);font-size:16px;cursor:pointer;font-family:inherit;padding:8px 0;text-align:left}
+.head .r{text-align:right;color:var(--text)}
+.lbl{color:var(--mute);margin:18px 0 10px;font-size:16px}
+.field{display:flex;align-items:center;gap:10px;background:var(--tile);border-radius:14px;padding:14px 16px;font-size:20px}
+.field input,.field select{flex:1;min-width:0;background:none;border:0;color:var(--text);font-size:19px;font-family:inherit}
+.field select option{background:#252122}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.sim{background:var(--tile);border-radius:14px;padding:16px;color:var(--mute);font-size:15px;line-height:1.35;margin-top:22px}
+.lnk{display:block;width:100%;background:none;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:13px;font-size:15px;margin-top:12px;cursor:pointer;font-family:inherit}
+.go{display:block;width:100%;background:var(--gold);color:var(--ink);border:0;border-radius:999px;padding:15px;font-size:16px;font-weight:700;margin-top:26px;cursor:pointer;font-family:inherit}
+.err{color:var(--red);font-size:14px;margin-top:14px;min-height:18px}
+svg{width:30px;height:30px;display:block}.t svg{width:34px;height:34px}
+.list{list-style:none;margin:60px 0 0;padding:0 8px}
+.list li{display:flex;align-items:center;gap:18px;padding:22px 0;border-bottom:1px solid var(--line);font-size:17px;cursor:pointer}
+.list li:last-child{border:0}.list u{width:30px;display:grid;place-items:center}
+.row{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid var(--line);font-size:16px;gap:12px}
+.row small{display:block;color:var(--mute);font-size:13px;margin-top:3px}.pos{color:var(--grn)}
+.sec{color:var(--mute);font-size:14px;margin:26px 0 4px}
+.chk{width:22px;height:22px;accent-color:#e7d21b}
+.ok{width:64px;height:64px;border-radius:50%;background:var(--gold);color:var(--ink);display:grid;place-items:center;font-size:32px;margin:70px auto 18px}
+.c{text-align:center}.c h2{font-size:24px;margin:0 0 8px}.c p{color:var(--mute);margin:4px 0;font-size:16px}
+#toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#ece9e9;color:#1b181b;padding:11px 18px;border-radius:999px;font-size:14px;display:none;z-index:9}
+.field input[type=color]{flex:none;width:56px;height:34px;padding:0;border:0;background:none}.hint{color:var(--mute);font-size:13px;line-height:1.4;margin:22px 0 0}
+.screen{padding-bottom:120px}
+#nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:calc(100% - 20px);max-width:420px;height:72px;background:var(--navbg,#363536);border-radius:36px;display:none;grid-template-columns:repeat(5,1fr);padding:6px;gap:2px;z-index:8;box-shadow:0 2px 14px rgba(0,0,0,.45)}
+#nav.on{display:grid}
+#nav button{background:none;border:0;color:#fff;border-radius:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-family:inherit;cursor:pointer;padding:0}
+#nav button.on{background:var(--navsel,#212021)}
+#nav svg{width:28px;height:28px}
+.cardv{background:var(--tile);border:1px solid var(--line);border-radius:14px;height:190px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;margin-top:26px;font-size:15px}
+.av{width:40px;height:40px;border-radius:50%;background:var(--tile);border:1px solid var(--line);display:grid;place-items:center;font-weight:600;flex:none}
+.av.big{width:64px;height:64px;font-size:26px;margin:0 auto}
+.row.tx{gap:12px;cursor:pointer}.row.tx>span:nth-child(2){flex:1;min-width:0}
+</style>
+</head>
+<body>
+<main class="screen on" id="home">
+  <div class="bar"><span class="ic">✉</span><span class="ic">?</span></div>
+  <h1 id="hi"></h1>
+  <div class="search"><span>⌕</span><span id="ph"></span><span>🎙</span></div>
+  <section class="card" id="card">
+    <div class="top"><span id="acct"></span><button class="dots" id="edit" aria-label="Edit mock balance">•••</button></div>
+    <div class="bot"><button class="xfer" id="xfer">Transfer</button><div class="bal"><b id="bal"></b><small id="bal2"></small></div></div>
+  </section>
+  <div id="pg"></div>
+  <div class="tiles" id="tiles"></div>
+  <button class="pill ghost" id="edit2">Edit widgets</button>
+  <button class="pill solid" id="logoff">Log off</button>
+  <p class="note" id="foot"></p>
+</main>
+
+<main class="screen" id="editS">
+  <div class="head"><button id="cancel">Cancel</button><b>Edit Mock Balance</b><button class="r" id="save">Save</button></div>
+  <div class="lbl" id="lbl"></div>
+  <div class="field"><span>$</span><input id="ibal" inputmode="decimal" autocomplete="off" aria-label="Mock balance"></div>
+  <div class="lbl">Account name</div><div class="field"><input id="iacct" autocomplete="off" aria-label="Account name"></div>
+  <div class="lbl">BSB</div><div class="field"><input id="ibsb" autocomplete="off" aria-label="BSB"></div>
+  <div class="lbl">Account number</div><div class="field"><input id="inum" autocomplete="off" aria-label="Account number"></div>
+  <div class="lbl">Your name</div><div class="field"><input id="iname" autocomplete="off" aria-label="Your name"></div>
+  <div class="lbl">Footer text (leave empty to hide)</div><div class="field"><input id="ifoot" autocomplete="off" aria-label="Footer text"></div>
+  <div class="sim">Simulator control. Updates local mock data everywhere this account appears. Not connected to any real bank.</div>
+  <button class="lnk" id="cust">Customise app: name, labels, colours</button>
+  <button class="lnk" id="addA">Add another account</button>
+  <button class="lnk" id="delA">Delete this account</button>
+  <button class="lnk" id="rst">Reset everything</button>
+</main>
+
+<main class="screen" id="payS">
+  <div class="head"><button id="back">‹ Back</button><b>Pay</b><span></span></div>
+  <ul class="list">
+    <li data-k="cash"><u><svg viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="22" rx="2" fill="#fff"/><path d="M3 11h26M3 17h26M3 22h26M11 11v16M21 11v16" stroke="#1b181b" stroke-width="2"/></svg></u><span>Cardless Withdrawal &amp; Deposit</span></li>
+    <li data-k="xfer"><u><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h5c8 0 8 14 16 14h4M3 23h5c2 0 3.5-1.2 5-3M17 12c2-2 4-3 7-3h4M25 5l4 4-4 4M25 19l4 4-4 4"/></svg></u><span>Transfer between accounts</span></li>
+    <li data-k="pay"><u><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2"><circle cx="16" cy="10" r="5"/><path d="M5 28c0-6 5-10 11-10s11 4 11 10z"/></svg></u><span>Pay someone</span></li>
+    <li data-k="bpay"><u><svg viewBox="0 0 32 32"><rect x="3" y="3" width="26" height="26" rx="4" fill="#fff"/><text x="16" y="18" text-anchor="middle" font-size="15" font-weight="800" fill="#1b181b" font-family="Arial">B</text><text x="16" y="26" text-anchor="middle" font-size="6.5" font-weight="800" fill="#1b181b" font-family="Arial">PAY</text></svg></u><span>BPAY</span></li>
+    <li data-k="intl"><u><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="16" cy="16" r="12"/><ellipse cx="16" cy="16" rx="5" ry="12"/><path d="M4 16h24M6 9h20M6 23h20"/></svg></u><span>International money transfer</span></li>
+    <li data-k="contacts"><u><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="13" cy="10" r="5"/><path d="M3 28c0-6 4.5-10 10-10s10 4 10 10zM25 8v8M21 12h8"/></svg></u><span>Contacts and payees</span></li>
+  </ul>
+</main>
+
+<main class="screen" id="formS">
+  <div class="head"><button id="fback">‹ Back</button><b id="ft"></b><span></span></div>
+  <div id="fb"></div><div class="err" id="ferr"></div>
+  <button class="go" id="fgo">Confirm</button>
+</main>
+
+<main class="screen" id="doneS">
+  <div class="ok">✓</div>
+  <div class="c"><h2 id="dh"></h2><p id="dp"></p><p id="dp2"></p></div>
+  <button class="go" id="done">Done</button>
+</main>
+
+<main class="screen" id="prodS">
+  <div class="head"><button id="pback">‹ Back</button><b>Accounts</b><span></span></div>
+  <div class="c" style="margin:30px 0 6px"><p>Total balance</p><div id="ptot" style="font-size:36px;font-weight:700"></div></div>
+  <div class="sec">Your accounts</div><div id="plist"></div>
+</main>
+
+<main class="screen" id="acctS">
+  <div class="head"><button id="aback">‹ Back</button><b id="an"></b><span></span></div>
+  <div class="c" style="margin-top:26px"><div id="ab" style="font-size:40px;font-weight:700"></div><p id="aa"></p><p id="ad" style="font-size:13px"></p></div>
+  <div style="display:flex;gap:10px;margin-top:18px"><button class="lnk" id="aadd" style="margin:0">Add transaction</button><button class="lnk" id="ahome" style="margin:0">Show on home</button></div>
+  <div class="search" style="margin:18px 0 0"><span>⌕</span><input id="tq" placeholder="Search transactions" aria-label="Search transactions" autocomplete="off" style="flex:1;background:none;border:0;color:var(--text);font-size:15px;font-family:inherit"></div>
+  <div id="tl"></div>
+</main>
+
+<main class="screen" id="txS">
+  <div class="head"><button id="tback">‹ Back</button><b>Transaction</b><button class="r" id="tedit">Edit</button></div>
+  <div id="tdet"></div>
+  <button class="lnk" id="tdel">Delete transaction</button>
+</main>
+
+<main class="screen" id="txE">
+  <div class="head"><button id="tcancel">Cancel</button><b id="te_t"></b><button class="r" id="tsave">Save</button></div>
+  <div class="lbl">Description</div><div class="field"><input id="tm" autocomplete="off" aria-label="Description"></div>
+  <div class="lbl">Amount</div><div class="field"><span>$</span><input id="ta" inputmode="decimal" autocomplete="off" aria-label="Amount"></div>
+  <div class="lbl">Type</div><div class="field"><select id="tt" aria-label="Type"><option value="out">Money out</option><option value="in">Money in</option></select></div>
+  <div class="lbl">Category</div><div class="field"><select id="tc" aria-label="Category"></select></div>
+  <div class="lbl">Date</div><div class="field"><input id="td" type="date" aria-label="Date"></div>
+  <label class="row"><span>Pending</span><input class="chk" type="checkbox" id="tp"></label>
+  <label class="row"><span>Also adjust account balance</span><input class="chk" type="checkbox" id="tj"></label>
+  <div class="err" id="terr"></div>
+</main>
+
+<main class="screen" id="contS">
+  <div class="head"><button id="cback">‹ Back</button><b>Contacts</b><button class="r" id="cadd">Add</button></div>
+  <div id="cl" style="margin-top:14px"></div>
+</main>
+
+<main class="screen" id="contE">
+  <div class="head"><button id="ccancel2">Cancel</button><b id="ce_t"></b><button class="r" id="csave2">Save</button></div>
+  <div class="lbl">Name</div><div class="field"><input id="cn" autocomplete="off" aria-label="Name"></div>
+  <div class="lbl">BSB</div><div class="field"><input id="cb" autocomplete="off" aria-label="BSB"></div>
+  <div class="lbl">Account number</div><div class="field"><input id="cu" autocomplete="off" aria-label="Account number"></div>
+  <div class="err" id="cerr"></div>
+  <button class="go" id="cpay" style="margin-top:8px">Pay this contact</button>
+  <button class="lnk" id="cdel">Delete contact</button>
+</main>
+
+<main class="screen" id="widS">
+  <div class="head"><button id="wcancel">Cancel</button><b>Edit widgets</b><button class="r" id="wsave">Save</button></div>
+  <div id="wlist"></div>
+</main>
+
+<main class="screen" id="custS">
+  <div class="head"><button id="ccancel">Cancel</button><b>Customise</b><button class="r" id="csave">Save</button></div>
+  <div id="cbody"></div>
+</main>
+
+<main class="screen" id="cardS">
+  <div class="head"><span></span><b>Cards</b><span></span></div>
+  <div class="cardv" id="cardv"></div>
+  <div class="lbl">Last 4 digits</div><div class="field"><input id="c4" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Last 4 digits"></div>
+  <button class="lnk" id="lock">Lock card</button>
+</main>
+
+<main class="screen" id="rewS">
+  <div class="head"><span></span><b>Rewards</b><span></span></div>
+  <div class="c" style="margin-top:50px"><div id="pts" style="font-size:46px;font-weight:700"></div><p>points</p></div>
+  <div class="lbl">Points balance</div><div class="field"><input id="ipts" inputmode="numeric" autocomplete="off" aria-label="Points balance"></div>
+</main>
+
+<main class="screen" id="outS">
+  <div class="ok">⏻</div>
+  <div class="c"><h2>You’re logged off</h2><p>Your mock accounts are saved on this device.</p></div>
+  <button class="go" id="logon">Log on</button>
+</main>
+<nav id="nav" aria-label="Main">
+  <button data-k="home" data-s="home"><svg viewBox="0 0 32 32"><path d="M16 4.500 27.500 16 16 27.500 4.500 16z" style="fill:var(--gold);stroke:var(--gold)" stroke-width="2" stroke-linejoin="round"/></svg><span>Home</span></button>
+  <button data-k="accounts" data-s="prodS"><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2.2"><rect x="4" y="5" width="24" height="9" rx="4.5"/><rect x="4" y="18" width="24" height="9" rx="4.5"/></svg><span>Accounts</span></button>
+  <button data-k="pay" data-s="payS"><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="16" r="10"/><text x="14" y="21" text-anchor="middle" font-size="14" font-weight="700" fill="#fff" stroke="none" font-family="Arial">$</text><path d="M24 14h6M27 11l3 3-3 3"/></svg><span>Pay</span></button>
+  <button data-k="cards" data-s="cardS"><svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="7" width="26" height="18" rx="1.5"/><circle cx="9.500" cy="14" r="2.200"/></svg><span>Cards</span></button>
+  <button data-k="rewards" data-s="rewS"><svg viewBox="0 0 32 32" fill="#fff"><rect x="5" y="12" width="22" height="5" rx="1"/><rect x="7" y="18" width="18" height="10" rx="1"/><path d="M16 12v16" style="stroke:var(--navbg,#363536)" stroke-width="2"/><path d="M16 12c-6-6-9-1-5 0M16 12c6-6 9-1 5 0" fill="none" stroke="#fff" stroke-width="2"/></svg><span>Rewards</span></button>
+</nav>
+<div id="toast" role="status"></div>
+
+<script>
+const KEY='larp-wallet-v4';
+const uid=()=>Math.random().toString(36).slice(2,9);
+const CATS=['Groceries','Eating out','Transport','Bills','Shopping','Health','Entertainment','Income','Transfer','Payments','Cash','Other'];
+function seed(accts){const D=86400000,n=Date.now(),R=[[0,'Corner Cafe',-6.5,'Eating out',0,1],[0,'Metro Supermarket',-84.32,'Groceries',1],[0,'Salary: Larp Pty Ltd',3250,'Income',2],[0,'Fuel Stop',-72.1,'Transport',3],[0,'Streamly Subscription',-15.99,'Entertainment',4],[0,'City Pharmacy',-23.45,'Health',6],[0,'Transfer from Goal Saver',200,'Transfer',8],[0,'Electric Co',-142.8,'Bills',9],[0,'Gym Membership',-49,'Health',11],[0,'Pizza Place',-38.6,'Eating out',12],[0,'Online Store',-129.95,'Shopping',14],[0,'Rent',-1800,'Bills',15],[1,'Interest',4.12,'Income',5],[1,'Transfer to Smart Access',-200,'Transfer',8],[1,'Savings deposit',500,'Transfer',15]];
+  return R.map(([i,d,m,c,k,p],j)=>({id:uid()+j,i:accts[Math.min(i,accts.length-1)].id,d,m,c,t:n-k*D-(j%5)*3600000-j*60000,p:p?1:0}))}
+const SEEDC=()=>[{id:'c1',name:'Alex Morgan',bsb:'123-456',num:'1111 2222'},{id:'c2',name:'Sam Lee',bsb:'123-456',num:'3333 4444'},{id:'c3',name:'Jordan Rivera',bsb:'123-456',num:'5555 6666'}];
+const DEF=()=>{const accts=[{id:'a1',n:'Smart Access',b:56928.34,bsb:'123-456',num:'1234 5678'},{id:'a2',n:'Goal Saver',b:1250.5,bsb:'123-456',num:'8765 4321'}];
+  return {contacts:SEEDC(),app:'Larp Wallet',greet:'Hi',phs:'How do I lock my card, Scam alerts, Payment limits, CrowdID',accent:'#e7d21b',bgc:'#1b181b',lab:{},card4:'4821',locked:false,pts:12480,name:'Larper',foot:'Parody wallet for fun. Not a bank and not connected to any real account.',cur:0,hide:[],accts,tx:seed(accts),seeded:true}};
+let st=DEF();
+try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&Array.isArray(r.accts)&&r.accts.length)st=Object.assign(st,r)}catch(e){}
+st.accts.forEach(a=>{if(!a.id)a.id=uid();if(!a.bsb)a.bsb='123-456';if(!a.num)a.num=String(10000000+Math.floor(Math.random()*90000000)).replace(/(\d{4})(\d{4})/,'$1 $2')});
+st.tx.forEach(t=>{if(!t.id)t.id=uid();if(!t.i){const a=st.accts.find(x=>x.n===t.a)||st.accts[0];t.i=a.id}if(!t.c)t.c='Payments'});
+if(!Array.isArray(st.contacts))st.contacts=SEEDC();
+if(!st.seeded){st.tx=st.tx.concat(seed(st.accts));st.seeded=true}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=n=>(n<0?'-':'')+'$'+Math.abs(Number(n)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=s=>parseFloat(String(s).replace(/[^0-9.\-]/g,''));
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+const A=()=>st.accts[st.cur];
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',2200)}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));const m={home:0,prodS:1,acctS:1,payS:2,cardS:3,rewS:4};$('nav').classList.toggle('on',id in m);document.querySelectorAll('#nav button').forEach((b,i)=>b.classList.toggle('on',m[id]===i));window.scrollTo(0,0)}
+const S='<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5">';
+const TILES=[
+ {k:'home',l:'Buy a home',s:S+'<path d="M6 14 16 5l10 9v13H6z"/><rect x="14" y="17" width="4" height="4" style="fill:var(--gold)" stroke="none"/></svg>'},
+ {k:'travel',l:'Travel',s:'<svg viewBox="0 0 32 32"><path style="fill:var(--gold)" d="M29 4 3 13l8 3.5L14 26l3.5-5.500 6 4z"/></svg>'},
+ {k:'invest',l:'Investing Hub',s:S+'<path d="M3 22l8-8 6 4 9-9"/><circle cx="26" cy="9" r="2.6" style="fill:var(--gold)" stroke="none"/></svg>'},
+ {k:'prod',l:'Products and features',s:S+'<rect x="5" y="5" width="9" height="9" rx="2"/><rect x="18" y="5" width="9" height="9" rx="2" style="fill:var(--gold)" stroke="none"/><rect x="5" y="18" width="9" height="9" rx="2"/><rect x="18" y="18" width="9" height="9" rx="2"/></svg>'}];
+const L=t=>st.lab['t_'+t.k]||t.l;
+const MD={};document.querySelectorAll('#payS li').forEach(li=>MD[li.dataset.k]=li.querySelector('span').textContent);
+const ND={};document.querySelectorAll('#nav button').forEach(b=>ND[b.dataset.k]=b.querySelector('span').textContent);
+const lighten=h=>{const n=parseInt(h.slice(1),16),c=x=>Math.min(255,x+10).toString(16).padStart(2,'0');return '#'+c(n>>16)+c((n>>8)&255)+c(n&255)};
+function theme(){const r=document.documentElement.style,n=parseInt(st.accent.slice(1),16),lum=0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255);
+  r.setProperty('--gold',st.accent);r.setProperty('--bg',st.bgc);r.setProperty('--tile',lighten(st.bgc));
+  r.setProperty('--ink',lum>150?'#110d06':'#ffffff');r.setProperty('--onink',lum>150?'#ffffff':'#110d06');
+  r.setProperty('--navbg',lighten(lighten(lighten(st.bgc))));r.setProperty('--navsel',st.bgc);document.querySelectorAll('#nav button').forEach(b=>b.querySelector('span').textContent=st.lab['n_'+b.dataset.k]||ND[b.dataset.k]);document.title=st.app;document.querySelector('meta[name=theme-color]').content=st.bgc;document.querySelector('meta[name=apple-mobile-web-app-title]').content=st.app;
+  document.querySelectorAll('#payS li').forEach(li=>li.querySelector('span').textContent=st.lab['m_'+li.dataset.k]||MD[li.dataset.k])}
+function render(){
+  theme();$('hi').textContent=(st.greet?st.greet+' ':'')+st.name;
+  $('acct').textContent=A().n;$('bal').textContent=money(A().b);$('bal2').textContent='Balance '+money(A().b);
+  $('foot').textContent=st.foot;$('foot').style.display=st.foot?'block':'none';
+  $('pg').innerHTML=st.accts.length>1?st.accts.map((a,i)=>'<i class="'+(i===st.cur?'on':'')+'"></i>').join(''):'';
+  const vis=TILES.filter(t=>!st.hide.includes(t.k));
+  $('tiles').innerHTML=vis.map((t,i)=>'<div class="t'+(t.k==='prod'?' last':'')+'" data-k="'+t.k+'"><div>'+t.s+'</div>'+L(t)+'</div>').join('');
+  $('tiles').querySelectorAll('.t').forEach(e=>e.onclick=()=>e.dataset.k==='prod'?openProd():toast(e.textContent+' is coming soon'));
+}
+let pi=0;
+function tick(){const p=st.phs.split(',').map(x=>x.trim()).filter(Boolean);$('ph').textContent=p.length?'Search “'+p[pi++%p.length]+'”':'Search'}tick();setInterval(tick,3000);
+
+$('card').onclick=e=>{if(e.target.closest('button'))return;if(st.accts.length>1){st.cur=(st.cur+1)%st.accts.length;persist();render()}};
+
+/* Edit account */
+function openEdit(){$('lbl').textContent='Mock balance — '+A().n;$('ibal').value=A().b;$('iacct').value=A().n;$('ibsb').value=A().bsb;$('inum').value=A().num;$('iname').value=st.name;$('ifoot').value=st.foot;show('editS');$('ibal').focus()}
+$('edit').onclick=openEdit;$('cancel').onclick=()=>show('home');
+$('save').onclick=()=>{const v=num($('ibal').value);if(!isNaN(v))A().b=Math.round(v*100)/100;A().n=$('iacct').value.trim()||A().n;A().bsb=$('ibsb').value.trim()||A().bsb;A().num=$('inum').value.trim()||A().num;st.name=$('iname').value.trim()||st.name;st.foot=$('ifoot').value.trim();persist();render();show('home')};
+function arm(id,txt,fn){const b=$(id);let on=false;b.onclick=()=>{if(!on){on=true;b.textContent='Tap again to confirm';setTimeout(()=>{on=false;b.textContent=txt},3000)}else{on=false;b.textContent=txt;fn()}}}
+$('addA').onclick=()=>{st.accts.push({id:uid(),n:'New Account',b:0,bsb:'123-456',num:'0000 0000'});st.cur=st.accts.length-1;persist();render();openEdit()};
+arm('delA','Delete this account',()=>{if(st.accts.length<2){toast('Keep at least one account');return}const gone=st.accts.splice(st.cur,1)[0];st.tx=st.tx.filter(t=>t.i!==gone.id);st.cur=0;persist();render();show('home')});
+arm('rst','Reset everything',()=>{st=DEF();persist();render();show('home')});
+
+/* Widgets */
+$('edit2').onclick=()=>{$('wlist').innerHTML=TILES.map(t=>'<label class="row"><span>'+L(t)+'</span><input class="chk" type="checkbox" data-k="'+t.k+'" '+(st.hide.includes(t.k)?'':'checked')+'></label>').join('');show('widS')};
+$('wcancel').onclick=()=>show('home');
+$('wsave').onclick=()=>{st.hide=[...$('wlist').querySelectorAll('input')].filter(i=>!i.checked).map(i=>i.dataset.k);persist();render();show('home')};
+
+/* Accounts and transactions */
+const av=(d,big)=>'<span class="av'+(big?' big':'')+'">'+esc((String(d).replace(/^(Transfer (to|from)|Payment to|BPAY|International transfer to)\s*/i,'')||String(d)).charAt(0).toUpperCase())+'</span>';
+const dayLbl=t=>{const d=new Date(t),n=new Date(),f=x=>new Date(x.getFullYear(),x.getMonth(),x.getDate()).getTime(),k=Math.round((f(n)-f(d))/86400000);return k<=0?'Today':k===1?'Yesterday':d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})};
+const amt=m=>(m>0?'+':'')+money(m);
+let ai=0,q='',ti='',te=null;
+function openProd(){
+  $('ptot').textContent=money(st.accts.reduce((s,a)=>s+a.b,0));
+  $('plist').innerHTML=st.accts.map((a,i)=>'<div class="row" data-i="'+i+'" style="cursor:pointer"><span>'+esc(a.n)+'<small>BSB '+esc(a.bsb)+' · '+esc(a.num)+'</small></span><b>'+money(a.b)+'</b></div>').join('');
+  $('plist').querySelectorAll('.row').forEach(r=>r.onclick=()=>openAcct(+r.dataset.i));
+  show('prodS');
+}
+function openAcct(i){ai=i;q='';$('tq').value='';renderAcct();show('acctS')}
+function renderAcct(){const a=st.accts[ai];
+  $('an').textContent=a.n;$('ab').textContent=money(a.b);$('aa').textContent='Available '+money(a.b);$('ad').textContent='BSB '+a.bsb+' · Account '+a.num;
+  const rows=st.tx.filter(t=>t.i===a.id&&(!q||(t.d+' '+t.c).toLowerCase().includes(q))).sort((x,y)=>y.t-x.t);
+  let h='',last='';
+  rows.forEach(t=>{const g=dayLbl(t.t);if(g!==last){h+='<div class="sec">'+g+'</div>';last=g}
+    h+='<div class="row tx" data-id="'+t.id+'">'+av(t.d)+'<span>'+esc(t.d)+'<small>'+esc(t.c)+(t.p?' · Pending':'')+'</small></span><span class="'+(t.m>0?'pos':'')+'">'+amt(t.m)+'</span></div>'});
+  $('tl').innerHTML=h||'<p class="note" style="margin:24px 0">No transactions found.</p>';
+  $('tl').querySelectorAll('.tx').forEach(r=>r.onclick=()=>openTx(r.dataset.id));
+}
+function openTx(id){const t=st.tx.find(x=>x.id===id);if(!t)return;ti=id;const a=st.accts.find(x=>x.id===t.i)||{n:''};
+  $('tdet').innerHTML='<div class="c" style="margin-top:28px">'+av(t.d,1)+'<h2 style="margin:14px 0 4px">'+esc(t.d)+'</h2><div class="'+(t.m>0?'pos':'')+'" style="font-size:34px;font-weight:700">'+amt(t.m)+'</div></div><div style="margin-top:22px"></div>'+
+   [['Date',new Date(t.t).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})],['Category',t.c],['Account',a.n],['Status',t.p?'Pending':'Processed'],['Reference','LW'+t.id.toUpperCase().slice(0,8)]].map(([k,v])=>'<div class="row"><span style="color:var(--mute)">'+k+'</span><span>'+esc(v)+'</span></div>').join('');
+  show('txS')}
+function openTxE(id){te=id?st.tx.find(x=>x.id===id):null;const t=te||{d:'',m:-1,c:'Other',t:Date.now(),p:0};
+  $('te_t').textContent=te?'Edit':'Add transaction';
+  $('tm').value=t.d;$('ta').value=te?Math.abs(t.m):'';$('tt').value=t.m>0?'in':'out';
+  $('tc').innerHTML=CATS.map(c=>'<option'+(c===t.c?' selected':'')+'>'+c+'</option>').join('');
+  $('td').value=new Date(t.t-new Date(t.t).getTimezoneOffset()*60000).toISOString().slice(0,10);
+  $('tp').checked=!!t.p;$('tj').checked=false;$('terr').textContent='';show('txE')}
+$('tsave').onclick=()=>{const d=$('tm').value.trim(),v=Math.abs(num($('ta').value)),err=m=>{$('terr').textContent=m};
+  if(!d)return err('Enter a description.');if(!(v>0))return err('Enter an amount greater than $0.');
+  const m=Math.round(($('tt').value==='in'?v:-v)*100)/100,dt=new Date($('td').value+'T12:00:00').getTime()||Date.now(),acc=st.accts[ai],c=$('tc').value,p=$('tp').checked?1:0;
+  if(te){const old=te.m;Object.assign(te,{d,m,c,t:dt,p});if($('tj').checked)acc.b=Math.round((acc.b+m-old)*100)/100}
+  else{st.tx.unshift({id:uid(),i:acc.id,d,m,c,t:dt,p});if($('tj').checked)acc.b=Math.round((acc.b+m)*100)/100}
+  persist();render();renderAcct();show('acctS')};
+$('pback').onclick=()=>show('home');$('aback').onclick=()=>openProd();
+$('aadd').onclick=()=>openTxE(null);$('tcancel').onclick=()=>show('acctS');
+$('ahome').onclick=()=>{st.cur=ai;persist();render();toast('Showing on your home screen')};
+$('tq').oninput=()=>{q=$('tq').value.trim().toLowerCase();renderAcct()};
+$('tback').onclick=()=>show('acctS');$('tedit').onclick=()=>openTxE(ti);
+arm('tdel','Delete transaction',()=>{st.tx=st.tx.filter(x=>x.id!==ti);persist();renderAcct();show('acctS')});
+
+/* Contacts */
+let ci='';
+function openCont(){
+  $('cl').innerHTML=st.contacts.map(c=>'<div class="row tx" data-id="'+c.id+'">'+av(c.name)+'<span>'+esc(c.name)+'<small>BSB '+esc(c.bsb)+' · '+esc(c.num)+'</small></span><span style="color:var(--mute)">›</span></div>').join('')||'<p class="note" style="margin:24px 0">No contacts yet. Tap Add to create one.</p>';
+  $('cl').querySelectorAll('.tx').forEach(r=>r.onclick=()=>openContE(r.dataset.id));show('contS')}
+function openContE(id){ci=id||'';const c=st.contacts.find(x=>x.id===id)||{name:'',bsb:'',num:''};
+  $('ce_t').textContent=id?'Edit contact':'New contact';$('cn').value=c.name;$('cb').value=c.bsb;$('cu').value=c.num;$('cerr').textContent='';
+  $('cpay').style.display=id?'block':'none';$('cdel').style.display=id?'block':'none';show('contE')}
+$('cadd').onclick=()=>openContE('');$('cback').onclick=()=>show('payS');$('ccancel2').onclick=()=>openCont();
+$('csave2').onclick=()=>{const n=$('cn').value.trim();if(!n){$('cerr').textContent='Enter a name.';return}
+  const o={name:n,bsb:$('cb').value.trim()||'000-000',num:$('cu').value.trim()||'0000 0000'};
+  if(ci)Object.assign(st.contacts.find(x=>x.id===ci),o);else st.contacts.push(Object.assign({id:uid()},o));
+  persist();openCont()};
+$('cpay').onclick=()=>{openForm('pay');$('f_c').value=ci};
+arm('cdel','Delete contact',()=>{st.contacts=st.contacts.filter(x=>x.id!==ci);persist();openCont()});
+
+/* Pay + transfers */
+$('xfer').onclick=()=>show('payS');$('back').onclick=()=>show('home');
+document.querySelectorAll('#payS li').forEach(li=>li.onclick=()=>li.dataset.k==='contacts'?openCont():openForm(li.dataset.k));
+const AM={k:'amt',l:'Amount'};
+const F={
+ cash:{t:'Cash',title:'Cardless Withdrawal & Deposit',f:[{k:'mode',l:'What would you like to do?',o:['Withdraw','Deposit']},AM]},
+ xfer:{t:'Transfer',title:'Transfer between accounts',f:[{k:'from',l:'From',o:'a'},{k:'to',l:'To',o:'a'},AM]},
+ pay:{t:'Pay',title:'Pay someone',f:[{k:'c',l:'Pay to',o:'c'},{k:'who',l:'New payee name (only if not in your contacts)'},AM,{k:'ref',l:'Description (optional)'}]},
+ bpay:{t:'BPAY',title:'BPAY',f:[{k:'code',l:'Biller code',req:1},{k:'crn',l:'Reference number'},AM]},
+ intl:{t:'Intl',title:'International money transfer',f:[{k:'c',l:'Recipient',o:'c'},{k:'who',l:'New recipient name (only if not in your contacts)'},{k:'ctry',l:'Country',req:1},AM]}
+};
+let fk='';
+function openForm(k){fk=k;const c=F[k];$('ft').textContent=st.lab['m_'+k]||c.title;
+  $('fb').innerHTML=c.f.map(f=>'<div class="lbl">'+f.l+'</div><div class="field">'+(f.o?'<select id="f_'+f.k+'">'+(f.o==='a'?st.accts.map((a,i)=>'<option value="'+i+'">'+esc(a.n)+' ('+money(a.b)+')</option>').join(''):f.o==='c'?st.contacts.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')+'<option value="">New payee…</option>':f.o.map(o=>'<option>'+o+'</option>').join(''))+'</select>':(f.k==='amt'?'<span>$</span>':'')+'<input id="f_'+f.k+'" autocomplete="off"'+(f.k==='amt'?' inputmode="decimal"':'')+'>')+'</div>').join('');
+  if(k==='xfer'){$('f_from').value=st.cur;$('f_to').value=st.accts.length>1?(st.cur+1)%st.accts.length:0}
+  $('ferr').textContent='';show('formS');
+}
+$('fback').onclick=()=>show('payS');
+function log(m,d,a){const c=/^Transfer/i.test(d)?'Transfer':/^(Cardless|Cash)/i.test(d)?'Cash':'Payments';st.tx.unshift({id:uid(),i:a.id,d,m,c,t:Date.now(),p:0});st.tx=st.tx.slice(0,300)}
+$('fgo').onclick=()=>{
+  const c=F[fk],v={};c.f.forEach(f=>v[f.k]=$('f_'+f.k).value.trim());
+  const err=m=>{$('ferr').textContent=m};
+  for(const f of c.f)if(f.req&&!v[f.k])return err('Enter '+f.l.toLowerCase().replace('?','')+'.');
+  if(fk==='pay'||fk==='intl'){const ct=st.contacts.find(x=>x.id===v.c);v.who=ct?ct.name:v.who;if(!v.who)return err('Choose a contact or enter a name.')}
+  const amt=Math.round(num(v.amt)*100)/100;
+  if(!(amt>0))return err('Enter an amount greater than $0.');
+  const a=A();let head='',sub='';
+  const take=(acc,d)=>{if(acc.b<amt){err('Not enough funds in '+acc.n+' ('+money(acc.b)+').');return false}acc.b=Math.round((acc.b-amt)*100)/100;log(-amt,d,acc);return true};
+  if(fk==='cash'){
+    if(v.mode==='Withdraw'){if(!take(a,'Cardless withdrawal'))return}else{a.b=Math.round((a.b+amt)*100)/100;log(amt,'Cash deposit',a)}
+    head=v.mode+' complete';sub=money(amt)+' · '+a.n;
+  }else if(fk==='xfer'){
+    const f=st.accts[+v.from],t=st.accts[+v.to];
+    if(f===t)return err('Choose two different accounts.');
+    if(f.b<amt)return err('Not enough funds in '+f.n+' ('+money(f.b)+').');
+    f.b=Math.round((f.b-amt)*100)/100;t.b=Math.round((t.b+amt)*100)/100;
+    log(-amt,'Transfer to '+t.n,f);log(amt,'Transfer from '+f.n,t);
+    head='Transfer complete';sub=money(amt)+' from '+f.n+' to '+t.n;
+  }else{
+    const d=fk==='pay'?'Payment to '+v.who+(v.ref?' · '+v.ref:''):fk==='bpay'?'BPAY '+v.code+(v.crn?' · Ref '+v.crn:''):'International transfer to '+v.who+', '+v.ctry;
+    if(!take(a,d))return;
+    head=fk==='bpay'?'BPAY payment complete':fk==='intl'?'International transfer sent':'Payment complete';
+    sub=money(amt)+' · '+(v.who||'Biller '+v.code);
+  }
+  persist();render();
+  $('dh').textContent=head;$('dp').textContent=sub;$('dp2').textContent='New balance: '+money(A().b)+' · '+A().n;show('doneS');
+};
+$('done').onclick=()=>show('home');
+
+/* Bottom bar, cards, rewards */
+function renderCard(){const l=st.locked,c=$('cardv');c.style.opacity=l?.55:1;
+  c.innerHTML='<div style="display:flex;justify-content:space-between"><span>'+esc(A().n)+'</span><span>'+(l?'Locked':'Active')+'</span></div><div style="font-size:22px;letter-spacing:2px">•••• •••• •••• '+esc(st.card4)+'</div><div>'+esc(st.name.toUpperCase())+'</div>';
+  $('lock').textContent=l?'Unlock card':'Lock card'}
+$('c4').oninput=()=>{st.card4=$('c4').value.replace(/\D/g,'').slice(0,4)||'0000';persist();renderCard()};
+$('lock').onclick=()=>{st.locked=!st.locked;persist();renderCard();toast(st.locked?'Card locked':'Card unlocked')};
+$('ipts').oninput=()=>{const v=parseInt($('ipts').value.replace(/\D/g,''),10);st.pts=isNaN(v)?0:v;persist();$('pts').textContent=st.pts.toLocaleString()};
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{const s=b.dataset.s;
+  if(s==='cardS'){$('c4').value=st.card4;renderCard()}
+  if(s==='rewS'){$('ipts').value=st.pts;$('pts').textContent=st.pts.toLocaleString()}
+  if(s==='prodS')openProd();else show(s)});
+
+/* Customise */
+const CF=[['app','App name','text'],['greet','Greeting word (blank for none)','text'],['phs','Search suggestions (comma separated)','text'],['accent','Card colour','color'],['bgc','Background colour','color']];
+function openCust(){let h='';
+  CF.forEach(([k,l,t])=>{h+='<div class="lbl">'+l+'</div><div class="field"><input id="c_'+k+'" type="'+t+'" value="'+esc(st[k])+'" autocomplete="off"></div>'});
+  h+='<div class="sec">Home tiles</div>';TILES.forEach(t=>{h+='<div class="lbl">'+t.l+'</div><div class="field"><input id="c_t_'+t.k+'" value="'+esc(L(t))+'" autocomplete="off"></div>'});
+  h+='<div class="sec">Pay menu</div>';Object.keys(MD).forEach(k=>{h+='<div class="lbl">'+esc(MD[k])+'</div><div class="field"><input id="c_m_'+k+'" value="'+esc(st.lab['m_'+k]||MD[k])+'" autocomplete="off"></div>'});
+  h+='<div class="sec">Bottom bar</div>';Object.keys(ND).forEach(k=>{h+='<div class="lbl">'+esc(ND[k])+'</div><div class="field"><input id="c_n_'+k+'" value="'+esc(st.lab['n_'+k]||ND[k])+'" autocomplete="off"></div>'});
+  h+='<p class="hint">iPhone reads the home-screen name from this app name when you tap Add to Home Screen. Android reads it from manifest.webmanifest.</p>';
+  $('cbody').innerHTML=h;show('custS')}
+$('cust').onclick=openCust;$('ccancel').onclick=()=>show('editS');
+$('csave').onclick=()=>{
+  CF.forEach(([k])=>{st[k]=$('c_'+k).value.trim()||(k==='greet'||k==='phs'?'':DEF()[k])});
+  TILES.forEach(t=>{const v=$('c_t_'+t.k).value.trim();if(v&&v!==t.l)st.lab['t_'+t.k]=v;else delete st.lab['t_'+t.k]});
+  Object.keys(ND).forEach(k=>{const v=$('c_n_'+k).value.trim();if(v&&v!==ND[k])st.lab['n_'+k]=v;else delete st.lab['n_'+k]});
+  Object.keys(MD).forEach(k=>{const v=$('c_m_'+k).value.trim();if(v&&v!==MD[k])st.lab['m_'+k]=v;else delete st.lab['m_'+k]});
+  persist();render();show('home')};
+
+/* Log off / on */
+$('logoff').onclick=()=>show('outS');$('logon').onclick=()=>show('home');
+render();show('home');
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
