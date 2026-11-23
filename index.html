@@ -156,6 +156,7 @@ svg{width:30px;height:30px;display:block}.t svg{width:34px;height:34px}
   <div class="lbl">Type</div><div class="field"><select id="tt" aria-label="Type"><option value="out">Money out</option><option value="in">Money in</option></select></div>
   <div class="lbl">Category</div><div class="field"><select id="tc" aria-label="Category"></select></div>
   <div class="lbl">Date</div><div class="field"><input id="td" type="date" aria-label="Date"></div>
+  <div class="lbl">Time</div><div class="field"><input id="tti" type="time" aria-label="Time"></div>
   <label class="row"><span>Pending</span><input class="chk" type="checkbox" id="tp"></label>
   <label class="row"><span>Also adjust account balance</span><input class="chk" type="checkbox" id="tj"></label>
   <div class="err" id="terr"></div>
@@ -322,11 +323,11 @@ function openTxE(id){te=id?st.tx.find(x=>x.id===id):null;const t=te||{d:'',m:-1,
   $('te_t').textContent=te?'Edit':'Add transaction';
   $('tm').value=t.d;$('ta').value=te?Math.abs(t.m):'';$('tt').value=t.m>0?'in':'out';
   $('tc').innerHTML=CATS.map(c=>'<option'+(c===t.c?' selected':'')+'>'+c+'</option>').join('');
-  $('td').value=new Date(t.t-new Date(t.t).getTimezoneOffset()*60000).toISOString().slice(0,10);
+  $('td').value=new Date(t.t-new Date(t.t).getTimezoneOffset()*60000).toISOString().slice(0,10);$('tti').value=new Date(t.t-new Date(t.t).getTimezoneOffset()*60000).toISOString().slice(11,16);
   $('tp').checked=!!t.p;$('tj').checked=false;$('terr').textContent='';$('tdel').style.display=te?'block':'none';show('txE')}
 $('tsave').onclick=()=>{const d=$('tm').value.trim(),v=Math.abs(num($('ta').value)),err=m=>{$('terr').textContent=m};
   if(!d)return err('Enter a description.');if(!(v>0))return err('Enter an amount greater than $0.');
-  const m=Math.round(($('tt').value==='in'?v:-v)*100)/100,dt=new Date($('td').value+'T12:00:00').getTime()||Date.now(),acc=st.accts[ai],c=$('tc').value,p=$('tp').checked?1:0;
+  const m=Math.round(($('tt').value==='in'?v:-v)*100)/100,dt=new Date($('td').value+'T'+($('tti').value||'12:00')+':00').getTime()||Date.now(),acc=st.accts[ai],c=$('tc').value,p=$('tp').checked?1:0;
   if(te){const old=te.m;Object.assign(te,{d,m,c,t:dt,p});if($('tj').checked)acc.b=Math.round((acc.b+m-old)*100)/100}
   else{st.tx.unshift({id:uid(),i:acc.id,d,m,c,t:dt,p});if($('tj').checked)acc.b=Math.round((acc.b+m)*100)/100}
   persist();render();renderAcct();show('acctS')};
