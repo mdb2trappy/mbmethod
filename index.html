@@ -89,6 +89,43 @@ html.pin,body.pin{background:var(--bg)}
 @keyframes rot{to{transform:rotate(360deg)}}
 @keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
 .ok.anim{animation:pop .5s ease-out}
+
+/* Fit to screen: each page is one screen tall, only long lists scroll */
+:root{padding:0}
+html,body{height:100%;overflow:hidden}
+.screen{height:100vh;height:100dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px calc(92px + env(safe-area-inset-bottom,0px))}
+h1{font-size:clamp(26px,4.4dvh,34px);margin:clamp(4px,1dvh,12px) 0 clamp(8px,1.6dvh,16px)}
+.bar{height:28px}
+.search{margin-bottom:clamp(10px,2dvh,20px);padding:11px 14px}
+.card{height:clamp(118px,19dvh,168px)}
+.tiles{margin-top:clamp(10px,2dvh,20px)}
+.t div{height:clamp(56px,9.5dvh,84px);margin-bottom:6px}
+.pill{padding:clamp(9px,1.5dvh,12px) 26px}
+.ghost{margin-top:clamp(12px,2.6dvh,28px)!important}
+.solid{margin-top:clamp(18px,3dvh,26px)!important}
+.note{margin-top:clamp(8px,1.8dvh,22px)}
+.list{margin-top:6px}.list li{padding:clamp(12px,2.4dvh,20px) 0}
+.lbl{margin:clamp(8px,1.5dvh,16px) 0 clamp(6px,1dvh,10px)}
+.field{padding:clamp(10px,1.5dvh,14px) 16px}
+.row{padding:clamp(9px,1.5dvh,14px) 0}
+.ok{margin:clamp(10px,2.4dvh,36px) auto 12px!important}
+.go{margin-top:clamp(12px,2.4dvh,24px)}
+#prodS .c{margin:6px 0 2px!important}
+#rewS .c{margin-top:16px!important}
+#revS .c{margin-top:8px!important}
+#acctS.on{display:flex;flex-direction:column;overflow:hidden}
+#acctS .c{margin-top:4px!important}#acctS #ab{font-size:clamp(30px,5dvh,40px)!important}
+#acctS .search{margin:10px 0 0!important}
+#acctS #tl{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#logS{min-height:0;padding:calc(env(safe-area-inset-top,0px) + 8px) 24px calc(20px + env(safe-area-inset-bottom,0px))}
+.pmark{margin:clamp(18px,6dvh,70px) 0 clamp(10px,2.2dvh,22px)}
+#logS h2{margin-bottom:clamp(14px,2.6dvh,26px)}
+.pad button{height:clamp(46px,7.4dvh,62px)}
+@media (max-height:700px){.go{margin-top:8px}.lbl{margin:6px 0 4px}.fcard{margin-top:8px}.err{margin-top:6px}}
+/* Lock pages that never need scrolling; only list and form pages can scroll */
+.screen{overflow-y:hidden;overscroll-behavior:none}
+#prodS,#contS,#editS,#custS,#widS,#formS,#txS,#txE{overflow-y:auto;overscroll-behavior:contain}
+#acctS{overflow:hidden}
 </style>
 </head>
 <body>
