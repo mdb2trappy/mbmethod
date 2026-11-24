@@ -155,6 +155,8 @@ h1{font-size:clamp(26px,4.4dvh,34px);margin:clamp(4px,1dvh,12px) 0 clamp(8px,1.6
   <div class="lbl">Footer text (leave empty to hide)</div><div class="field"><input id="ifoot" autocomplete="off" aria-label="Footer text"></div>
   <div class="lbl">PIN (4 digits, empty accepts any PIN)</div><div class="field"><input id="ipin" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="PIN"></div>
   <div class="lbl">PIN screen when opening the app</div><div class="field"><select id="ipo" aria-label="PIN screen"><option value="1">On</option><option value="0">Off</option></select></div>
+  <div class="lbl">Notifications</div><div class="field"><select id="inot" aria-label="Notifications"><option value="0">Off</option><option value="1">On</option></select></div>
+  <button class="lnk" id="ntest">Send a test notification</button>
   <div class="sim">Simulator control. Updates local mock data everywhere this account appears. Not connected to any real bank.</div>
   <button class="lnk" id="cust">Customise app: name, labels, colours</button>
   <button class="lnk" id="addA">Add another account</button>
@@ -306,7 +308,7 @@ function seed(accts){const D=86400000,n=Date.now(),R=[[0,'Corner Cafe',-6.5,'Eat
 const SIMDEF='Simulated payment. No real money was moved.';
 const SEEDC=()=>[{id:'c1',name:'Alex Morgan',bsb:'123-456',num:'1111 2222',payid:'0400 111 222',ptype:'Mobile'},{id:'c2',name:'Sam Lee',bsb:'123-456',num:'3333 4444',payid:'sam.lee@example.com',ptype:'Email'},{id:'c3',name:'Jordan Rivera',bsb:'123-456',num:'5555 6666'}];
 const DEF=()=>{const accts=[{id:'a1',n:'Smart Access',b:56928.34,bsb:'123-456',num:'1234 5678'},{id:'a2',n:'Goal Saver',b:1250.5,bsb:'123-456',num:'8765 4321'}];
-  return {simNote:SIMDEF,pin:'',pinOn:true,contacts:SEEDC(),app:'Larp Wallet',greet:'Hi',phs:'How do I lock my card, Scam alerts, Payment limits, CrowdID',accent:'#e7d21b',bgc:'#1b181b',lab:{},card4:'4821',locked:false,pts:12480,name:'Larper',foot:'Parody wallet for fun. Not a bank and not connected to any real account.',cur:0,hide:[],accts,tx:seed(accts),seeded:true}};
+  return {notif:false,simNote:SIMDEF,pin:'',pinOn:true,contacts:SEEDC(),app:'Larp Wallet',greet:'Hi',phs:'How do I lock my card, Scam alerts, Payment limits, CrowdID',accent:'#e7d21b',bgc:'#1b181b',lab:{},card4:'4821',locked:false,pts:12480,name:'Larper',foot:'Parody wallet for fun. Not a bank and not connected to any real account.',cur:0,hide:[],accts,tx:seed(accts),seeded:true}};
 let st=DEF();
 try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&Array.isArray(r.accts)&&r.accts.length)st=Object.assign(st,r)}catch(e){}
 st.accts.forEach(a=>{if(!a.id)a.id=uid();if(!a.bsb)a.bsb='123-456';if(!a.num)a.num=String(10000000+Math.floor(Math.random()*90000000)).replace(/(\d{4})(\d{4})/,'$1 $2')});
@@ -364,9 +366,9 @@ function hold(el,fn,ms){ms=ms||3000;let t=null,x=0,y=0,fired=false;el.classList.
 document.addEventListener('click',e=>{if(Date.now()<(hold.until||0)){e.stopPropagation();e.preventDefault()}},true);
 
 /* Edit account */
-function openEdit(){$('lbl').textContent='Mock balance — '+A().n;$('ibal').value=A().b;$('iacct').value=A().n;$('ibsb').value=A().bsb;$('inum').value=A().num;$('iname').value=st.name;$('ifoot').value=st.foot;$('ipin').value=st.pin;$('ipo').value=st.pinOn?'1':'0';show('editS');$('ibal').focus()}
+function openEdit(){$('lbl').textContent='Mock balance — '+A().n;$('ibal').value=A().b;$('iacct').value=A().n;$('ibsb').value=A().bsb;$('inum').value=A().num;$('iname').value=st.name;$('ifoot').value=st.foot;$('ipin').value=st.pin;$('ipo').value=st.pinOn?'1':'0';$('inot').value=st.notif?'1':'0';show('editS');$('ibal').focus()}
 $('edit').onclick=null;hold($('card'),openEdit);$('cancel').onclick=()=>show('home');
-$('save').onclick=()=>{const v=num($('ibal').value);if(!isNaN(v))A().b=Math.round(v*100)/100;A().n=$('iacct').value.trim()||A().n;A().bsb=$('ibsb').value.trim()||A().bsb;A().num=$('inum').value.trim()||A().num;st.name=$('iname').value.trim()||st.name;st.foot=$('ifoot').value.trim();{const v=$('ipin').value.replace(/\D/g,'');st.pin=v.length===4?v:'';st.pinOn=$('ipo').value==='1'}persist();render();show('home')};
+$('save').onclick=()=>{const v=num($('ibal').value);if(!isNaN(v))A().b=Math.round(v*100)/100;A().n=$('iacct').value.trim()||A().n;A().bsb=$('ibsb').value.trim()||A().bsb;A().num=$('inum').value.trim()||A().num;st.name=$('iname').value.trim()||st.name;st.foot=$('ifoot').value.trim();{const v=$('ipin').value.replace(/\D/g,'');st.pin=v.length===4?v:'';st.pinOn=$('ipo').value==='1'}st.notif=$('inot').value==='1';if(st.notif&&'Notification' in window&&Notification.permission==='default')Notification.requestPermission();persist();render();show('home')};
 function arm(id,txt,fn){const b=$(id);let on=false;b.onclick=()=>{if(!on){on=true;b.textContent='Tap again to confirm';setTimeout(()=>{on=false;b.textContent=txt},3000)}else{on=false;b.textContent=txt;fn()}}}
 $('addA').onclick=()=>{st.accts.push({id:uid(),n:'New Account',b:0,bsb:'123-456',num:'0000 0000'});st.cur=st.accts.length-1;persist();render();openEdit()};
 arm('delA','Delete this account',()=>{if(st.accts.length<2){toast('Keep at least one account');return}const gone=st.accts.splice(st.cur,1)[0];st.tx=st.tx.filter(t=>t.i!==gone.id);st.cur=0;persist();render();show('home')});
@@ -526,7 +528,7 @@ $('revback').onclick=()=>show('formS');
 $('revgo').onclick=()=>{if(!plan)return;show('procS');
   setTimeout(()=>{const p=plan;if(!p)return;plan=null;p.run();persist();render();
     const rec='LW'+Math.floor(10000000+Math.random()*90000000),when=new Date().toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
-    $('dsim').textContent=st.simNote||SIMDEF;$('dh').textContent=p.head;$('dp').textContent=p.sub;$('dp2').textContent='New balance: '+money(A().b)+' · '+A().n;
+    $('dsim').textContent=st.simNote||SIMDEF;notify(st.app,p.head+'\n'+p.sub+'\n'+(st.simNote||SIMDEF));$('dh').textContent=p.head;$('dp').textContent=p.sub;$('dp2').textContent='New balance: '+money(A().b)+' · '+A().n;
     $('drc').innerHTML=[['Receipt number',rec],['Date and time',when]].concat(p.rows).map(([k,val])=>'<div class="row"><span style="color:var(--mute)">'+esc(k)+'</span><span style="text-align:right">'+esc(val)+'</span></div>').join('');
     const o=$('dok');o.classList.remove('anim');void o.offsetWidth;o.classList.add('anim');show('doneS')},1600)};
 $('done').onclick=()=>show('home');
@@ -561,6 +563,18 @@ $('csave').onclick=()=>{
   Object.keys(ND).forEach(k=>{const v=$('c_n_'+k).value.trim();if(v&&v!==ND[k])st.lab['n_'+k]=v;else delete st.lab['n_'+k]});
   Object.keys(MD).forEach(k=>{const v=$('c_m_'+k).value.trim();if(v&&v!==MD[k])st.lab['m_'+k]=v;else delete st.lab['m_'+k]});
   persist();render();show('home')};
+
+/* Notifications */
+async function notify(title,body){
+  if(!st.notif||!('Notification' in window)||Notification.permission!=='granted')return;
+  let reg=null;try{reg=('serviceWorker' in navigator)?await navigator.serviceWorker.getRegistration():null}catch(e){}
+  try{if(reg&&reg.showNotification)await reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'lw-'+Date.now()});
+    else new Notification(title,{body,icon:'icon-192.png'})}catch(e){try{new Notification(title,{body})}catch(_){}}}
+$('ntest').onclick=async()=>{
+  if(!('Notification' in window)){toast('Add the app to your Home Screen to use notifications');return}
+  let perm=Notification.permission;if(perm==='default')perm=await Notification.requestPermission();
+  if(perm!=='granted'){toast('Notifications are blocked in your phone settings');return}
+  const was=st.notif;st.notif=true;await notify(st.app,'Test notification\n'+(st.simNote||SIMDEF));st.notif=was;toast('Test notification sent')};
 
 /* PIN screen */
 let pin='';
