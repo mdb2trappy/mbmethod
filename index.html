@@ -243,6 +243,7 @@ h1{font-size:clamp(26px,4.4dvh,34px);margin:clamp(4px,1dvh,12px) 0 clamp(8px,1.6
   <div class="lbl">Name</div><div class="field"><input id="cn" autocomplete="off" aria-label="Name"></div>
   <div class="lbl">BSB</div><div class="field"><input id="cb" autocomplete="off" aria-label="BSB"></div>
   <div class="lbl">Account number</div><div class="field"><input id="cu" autocomplete="off" aria-label="Account number"></div>
+  <div class="lbl">PayID (mobile, email or ABN, optional)</div><div class="field"><input id="cpi" autocomplete="off" aria-label="PayID"></div>
   <div class="err" id="cerr"></div>
   <button class="go" id="cpay" style="margin-top:8px">Pay this contact</button>
   <button class="lnk" id="cdel">Delete contact</button>
@@ -303,7 +304,7 @@ const CATS=['Groceries','Eating out','Transport','Bills','Shopping','Health','En
 function seed(accts){const D=86400000,n=Date.now(),R=[[0,'Corner Cafe',-6.5,'Eating out',0,1],[0,'Metro Supermarket',-84.32,'Groceries',1],[0,'Salary: Larp Pty Ltd',3250,'Income',2],[0,'Fuel Stop',-72.1,'Transport',3],[0,'Streamly Subscription',-15.99,'Entertainment',4],[0,'City Pharmacy',-23.45,'Health',6],[0,'Transfer from Goal Saver',200,'Transfer',8],[0,'Electric Co',-142.8,'Bills',9],[0,'Gym Membership',-49,'Health',11],[0,'Pizza Place',-38.6,'Eating out',12],[0,'Online Store',-129.95,'Shopping',14],[0,'Rent',-1800,'Bills',15],[1,'Interest',4.12,'Income',5],[1,'Transfer to Smart Access',-200,'Transfer',8],[1,'Savings deposit',500,'Transfer',15]];
   return R.map(([i,d,m,c,k,p],j)=>({id:uid()+j,i:accts[Math.min(i,accts.length-1)].id,d,m,c,t:n-k*D-(j%5)*3600000-j*60000,p:p?1:0}))}
 const SIMDEF='Simulated payment. No real money was moved.';
-const SEEDC=()=>[{id:'c1',name:'Alex Morgan',bsb:'123-456',num:'1111 2222'},{id:'c2',name:'Sam Lee',bsb:'123-456',num:'3333 4444'},{id:'c3',name:'Jordan Rivera',bsb:'123-456',num:'5555 6666'}];
+const SEEDC=()=>[{id:'c1',name:'Alex Morgan',bsb:'123-456',num:'1111 2222',payid:'0400 111 222',ptype:'Mobile'},{id:'c2',name:'Sam Lee',bsb:'123-456',num:'3333 4444',payid:'sam.lee@example.com',ptype:'Email'},{id:'c3',name:'Jordan Rivera',bsb:'123-456',num:'5555 6666'}];
 const DEF=()=>{const accts=[{id:'a1',n:'Smart Access',b:56928.34,bsb:'123-456',num:'1234 5678'},{id:'a2',n:'Goal Saver',b:1250.5,bsb:'123-456',num:'8765 4321'}];
   return {simNote:SIMDEF,pin:'',pinOn:true,contacts:SEEDC(),app:'Larp Wallet',greet:'Hi',phs:'How do I lock my card, Scam alerts, Payment limits, CrowdID',accent:'#e7d21b',bgc:'#1b181b',lab:{},card4:'4821',locked:false,pts:12480,name:'Larper',foot:'Parody wallet for fun. Not a bank and not connected to any real account.',cur:0,hide:[],accts,tx:seed(accts),seeded:true}};
 let st=DEF();
@@ -420,20 +421,37 @@ $('tq').oninput=()=>{q=$('tq').value.trim().toLowerCase();renderAcct()};
 $('tback').onclick=()=>show('acctS');
 arm('tdel','Delete transaction',()=>{st.tx=st.tx.filter(x=>x!==te);persist();renderAcct();show('acctS')});
 
+/* PayID helpers */
+function detectPid(x){x=String(x).trim();if(!x)return null;
+  if(x.includes('@'))return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x)?{kind:'Email',val:x}:null;
+  let d=x.replace(/\D/g,'');if(x.startsWith('+61'))d='0'+d.slice(2);
+  if(d.length===10&&d.startsWith('04'))return{kind:'Mobile',val:d.replace(/(\d{4})(\d{3})(\d{3})/,'$1 $2 $3')};
+  if(d.length===11)return{kind:'ABN',val:d.replace(/(\d{2})(\d{3})(\d{3})(\d{3})/,'$1 $2 $3 $4')};
+  return null}
+function maskPid(k,v){if(k==='Email'){const[a,b]=v.split('@');return a[0]+'•••@'+b}
+  if(k==='Mobile')return v.slice(0,4)+' ••• '+v.slice(-3);
+  return '•• ••• ••• '+v.slice(-3)}
+function syncPay(){const g=k=>document.querySelector('#fb .fg[data-k="'+k+'"]');if(!g('c')||!g('how'))return;
+  const nw=!$('f_c').value,pid=nw&&$('f_how').value==='PayID';
+  ['how','who','save'].forEach(k=>g(k).style.display=nw?'':'none');
+  ['bsb','acc'].forEach(k=>g(k).style.display=nw&&!pid?'':'none');
+  g('pid').style.display=pid?'':'none'}
+
 /* Contacts */
 let ci='';
 function openCont(){
-  $('cl').innerHTML=st.contacts.map(c=>'<div class="row tx" data-id="'+c.id+'">'+av(c.name)+'<span>'+esc(c.name)+'<small>BSB '+esc(c.bsb)+' · '+esc(c.num)+'</small></span><span style="color:var(--mute)">›</span></div>').join('')||'<p class="note" style="margin:24px 0">No contacts yet. Hold the Contacts title for 3 seconds to add one.</p>';
-  $('cl').querySelectorAll('.tx').forEach(r=>{r.onclick=()=>{openForm('pay');$('f_c').value=r.dataset.id};hold(r,()=>openContE(r.dataset.id))});show('contS')}
+  $('cl').innerHTML=st.contacts.map(c=>'<div class="row tx" data-id="'+c.id+'">'+av(c.name)+'<span>'+esc(c.name)+'<small>BSB '+esc(c.bsb)+' · '+esc(c.num)+(c.payid?' · PayID':'')+'</small></span><span style="color:var(--mute)">›</span></div>').join('')||'<p class="note" style="margin:24px 0">No contacts yet. Hold the Contacts title for 3 seconds to add one.</p>';
+  $('cl').querySelectorAll('.tx').forEach(r=>{r.onclick=()=>{openForm('pay');$('f_c').value=r.dataset.id;syncPay()};hold(r,()=>openContE(r.dataset.id))});show('contS')}
 function openContE(id){ci=id||'';const c=st.contacts.find(x=>x.id===id)||{name:'',bsb:'',num:''};
-  $('ce_t').textContent=id?'Edit contact':'New contact';$('cn').value=c.name;$('cb').value=c.bsb;$('cu').value=c.num;$('cerr').textContent='';
+  $('ce_t').textContent=id?'Edit contact':'New contact';$('cn').value=c.name;$('cb').value=c.bsb;$('cu').value=c.num;$('cpi').value=c.payid||'';$('cerr').textContent='';
   $('cpay').style.display=id?'block':'none';$('cdel').style.display=id?'block':'none';show('contE')}
 hold($('ctitle'),()=>openContE(''));$('cback').onclick=()=>show('payS');$('ccancel2').onclick=()=>openCont();
 $('csave2').onclick=()=>{const n=$('cn').value.trim();if(!n){$('cerr').textContent='Enter a name.';return}
-  const o={name:n,bsb:$('cb').value.trim()||'000-000',num:$('cu').value.trim()||'0000 0000'};
+  const pr=$('cpi').value.trim(),pd=pr?detectPid(pr):null;if(pr&&!pd){$('cerr').textContent='Enter a valid mobile number, email or ABN for the PayID.';return}
+  const o={name:n,bsb:$('cb').value.trim()||'000-000',num:$('cu').value.trim()||'0000 0000',payid:pd?pd.val:'',ptype:pd?pd.kind:''};
   if(ci)Object.assign(st.contacts.find(x=>x.id===ci),o);else st.contacts.push(Object.assign({id:uid()},o));
   persist();openCont()};
-$('cpay').onclick=()=>{openForm('pay');$('f_c').value=ci};
+$('cpay').onclick=()=>{openForm('pay');$('f_c').value=ci;syncPay()};
 arm('cdel','Delete contact',()=>{st.contacts=st.contacts.filter(x=>x.id!==ci);persist();openCont()});
 
 /* Pay + transfers */
@@ -443,13 +461,14 @@ const AM={k:'amt',l:'Amount'};
 const F={
  cash:{t:'Cash',title:'Cardless Withdrawal & Deposit',f:[{k:'mode',l:'What would you like to do?',o:['Withdraw','Deposit']},AM]},
  xfer:{t:'Transfer',title:'Transfer between accounts',f:[{k:'from',l:'From',o:'a'},{k:'to',l:'To',o:'a'},AM]},
- pay:{t:'Pay',title:'Pay someone',f:[{k:'c',l:'Pay to',o:'c'},{k:'who',l:'New payee name (only if not in your contacts)'},AM,{k:'ref',l:'Description (optional)'}]},
+ pay:{t:'Pay',title:'Pay someone',f:[{k:'c',l:'Pay to',o:'c'},{k:'how',l:'Pay new payee using',o:['Account details','PayID']},{k:'who',l:'Payee name'},{k:'bsb',l:'BSB'},{k:'acc',l:'Account number'},{k:'pid',l:'PayID (mobile, email or ABN)'},AM,{k:'ref',l:'Description (optional)'},{k:'save',l:'Save as a contact',o:['No','Yes']}]},
  bpay:{t:'BPAY',title:'BPAY',f:[{k:'code',l:'Biller code',req:1},{k:'crn',l:'Reference number'},AM]},
  intl:{t:'Intl',title:'International money transfer',f:[{k:'c',l:'Recipient',o:'c'},{k:'who',l:'New recipient name (only if not in your contacts)'},{k:'ctry',l:'Country',req:1},AM]}
 };
 let fk='';
 function openForm(k){fk=k;const c=F[k];$('ft').textContent=st.lab['m_'+k]||c.title;
-  $('fb').innerHTML=c.f.map(f=>'<div class="lbl">'+f.l+'</div><div class="field">'+(f.o?'<select id="f_'+f.k+'">'+(f.o==='a'?st.accts.map((a,i)=>'<option value="'+i+'">'+esc(a.n)+' ('+money(a.b)+')</option>').join(''):f.o==='c'?st.contacts.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')+'<option value="">New payee…</option>':f.o.map(o=>'<option>'+o+'</option>').join(''))+'</select>':(f.k==='amt'?'<span>$</span>':'')+'<input id="f_'+f.k+'" autocomplete="off"'+(f.k==='amt'?' inputmode="decimal"':'')+'>')+'</div>').join('');
+  $('fb').innerHTML=c.f.map(f=>'<div class="fg" data-k="'+f.k+'"><div class="lbl">'+f.l+'</div><div class="field">'+(f.o?'<select id="f_'+f.k+'">'+(f.o==='a'?st.accts.map((a,i)=>'<option value="'+i+'">'+esc(a.n)+' ('+money(a.b)+')</option>').join(''):f.o==='c'?st.contacts.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('')+'<option value="">New payee…</option>':f.o.map(o=>'<option>'+o+'</option>').join(''))+'</select>':(f.k==='amt'?'<span>$</span>':'')+'<input id="f_'+f.k+'" autocomplete="off"'+(f.k==='amt'?' inputmode="decimal"':'')+'>')+'</div></div>').join('');
+  if(k==='pay'){$('f_c').onchange=syncPay;$('f_how').onchange=syncPay;syncPay()}
   if(k==='xfer'){$('f_from').value=st.cur;$('f_to').value=st.accts.length>1?(st.cur+1)%st.accts.length:0}
   $('fcard').style.display=k==='xfer'?'none':'flex';$('fcard').innerHTML='<span><small style="color:var(--mute);display:block;margin-bottom:3px">'+(k==='cash'?'Account':'Pay from')+'</small>'+esc(A().n)+'</span><b>'+money(A().b)+'</b>';
   $('ferr').textContent='';show('formS');
@@ -464,6 +483,12 @@ $('fgo').onclick=()=>{
   for(const f of c.f)if(f.req&&!v[f.k])return err('Enter '+f.l.toLowerCase().replace('?','')+'.');
   let ct=null;
   if(fk==='pay'||fk==='intl'){ct=st.contacts.find(x=>x.id===v.c);v.who=ct?ct.name:v.who;if(!v.who)return err('Choose a contact or enter a name.')}
+  let pm=null;
+  if(fk==='pay'){
+    if(ct)pm=ct.payid?{p:1,kind:ct.ptype||'Mobile',val:ct.payid}:{bsb:ct.bsb,num:ct.num};
+    else if(v.how==='PayID'){const d=detectPid(v.pid);if(!d)return err('Enter a valid mobile number, email or ABN for the PayID.');pm={p:1,kind:d.kind,val:d.val}}
+    else{if(!v.bsb||!v.acc)return err('Enter the BSB and account number.');pm={bsb:v.bsb,num:v.acc}}
+  }
   const amt=r2(num(v.amt));
   if(!(amt>0))return err('Enter an amount greater than $0.');
   const a=A(),short=acc=>'Not enough funds in '+acc.n+' ('+money(acc.b)+').';
@@ -482,13 +507,15 @@ $('fgo').onclick=()=>{
     if(a.b<amt)return err(short(a));
     const d=fk==='pay'?'Payment to '+v.who+(v.ref?' · '+v.ref:''):fk==='bpay'?'BPAY '+v.code+(v.crn?' · Ref '+v.crn:''):'International transfer to '+v.who+', '+v.ctry;
     rows=[['From',a.n],['To',fk==='bpay'?'Biller '+v.code:v.who]];
-    if(ct)rows.push(['Payee account','BSB '+ct.bsb+' · '+ct.num]);
+    if(pm&&pm.p)rows.push(['Pay using','PayID ('+pm.kind+')'],['PayID',maskPid(pm.kind,pm.val)],['Payment type','Fast payment']);
+    else if(pm)rows.push(['Payee account','BSB '+pm.bsb+' · '+pm.num]);
+    else if(ct)rows.push(['Payee account','BSB '+ct.bsb+' · '+ct.num]);
     if(fk==='bpay'&&v.crn)rows.push(['Reference',v.crn]);
     if(fk==='intl')rows.push(['Country',v.ctry]);
     if(fk==='pay'&&v.ref)rows.push(['Description',v.ref]);
     head=fk==='bpay'?'BPAY payment successful':fk==='intl'?'International transfer sent':'Payment successful';
     sub=money(amt)+' · '+(fk==='bpay'?'Biller '+v.code:v.who);
-    run=()=>{a.b=r2(a.b-amt);log(-amt,d,a)};
+    run=()=>{a.b=r2(a.b-amt);log(-amt,d,a);if(fk==='pay'&&!ct&&v.save==='Yes')st.contacts.push({id:uid(),name:v.who,bsb:pm.bsb||'000-000',num:pm.num||'0000 0000',payid:pm.p?pm.val:'',ptype:pm.p?pm.kind:''})};
   }
   plan={rows,head,sub,run};
   $('rvt').textContent=st.lab['m_'+fk]||c.title;$('rvamt').textContent=money(amt);
