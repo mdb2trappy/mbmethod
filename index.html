@@ -227,6 +227,11 @@ b,strong{font-weight:600}
 #cardv .cd-num{text-shadow:none;font-weight:500}
 #cardv .cd-bot small{opacity:.6}
 #cardv .cd-net{opacity:1}
+/* A little give: every main page can scroll a short way, like a real app */
+.screen{overflow-y:auto;overscroll-behavior:contain;position:relative}
+.screen::after{content:"";position:absolute;top:0;left:0;width:1px;height:calc(100dvh + 70px);pointer-events:none}
+#logS,#procS{overflow:hidden}
+#logS::after,#procS::after{display:none}
 </style>
 </head>
 <body>
